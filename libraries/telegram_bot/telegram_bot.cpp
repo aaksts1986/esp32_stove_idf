@@ -184,7 +184,7 @@ static void process_message(cJSON *message) {
             snprintf(buf, sizeof(buf), "🕐 Laiks: %s", get_time_str());
             send_telegram_message(chat_id_str, buf, NULL);
         } else if (waiting_for_temp && isdigit((unsigned char)text->valuestring[0])) {
-            target_temp_c = atoi(text->valuestring);
+            set_target_temperature(atoi(text->valuestring));
             waiting_for_temp = false;
             char msg[48]; snprintf(msg, sizeof(msg), "✅ Target: %d°C", target_temp_c);
             send_telegram_message(chat_id_str, msg, NULL);

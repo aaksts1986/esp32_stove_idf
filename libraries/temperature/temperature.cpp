@@ -7,8 +7,6 @@
 #include <onewire_bus.h>
 onewire_bus_handle_t owb0_bus_hdl = NULL;
 
-// 1-Wire kopnes handle no cita faila
-extern onewire_bus_handle_t owb0_bus_hdl;
 
 static const char *TAG = "TEMPERATURE";
 
