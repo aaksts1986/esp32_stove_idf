@@ -263,6 +263,17 @@ void start_temperature_task() {
     }
 }
 
+void cleanup_temperature_sensor() {
+    if (ds18b20_dev_hdl != NULL) {
+        ds18b20_delete(ds18b20_dev_hdl);
+        ds18b20_dev_hdl = NULL;
+    }
+    if (owb0_bus_hdl != NULL) {
+        onewire_bus_del(owb0_bus_hdl);
+        owb0_bus_hdl = NULL;
+    }
+    sensor_initialized = false;
+}
 
 void stop_temperature_task() {
     if (temperature_task_handle != NULL) {
@@ -271,10 +282,5 @@ void stop_temperature_task() {
         ESP_LOGI(TAG, "Temperature monitoring task stopped");
     }
 
-    // Free DS18B20 resources (new library)
-    if(ds18b20_dev_hdl != NULL) {
-        ds18b20_delete(ds18b20_dev_hdl);
-        ds18b20_dev_hdl = NULL;
-    }
-    sensor_initialized = false;
+        cleanup_temperature_sensor();
 }

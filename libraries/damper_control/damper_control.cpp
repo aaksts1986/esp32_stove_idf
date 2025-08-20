@@ -3,6 +3,7 @@
 #include <freertos/task.h>
 #include <esp_log.h>
 #include <driver/gpio.h>
+#include <driver/ledc.h>
 #include <esp_sleep.h>
 #include <esp_timer.h>
 #include <string>
@@ -21,11 +22,45 @@
 // Servo stub for ESP-IDF (ESP32Servo library replacement)
 class Servo {
 public:
-    void attach(int pin) { attached_pin = pin; }
-    void detach() { attached_pin = -1; }
-    void writeMicroseconds(int us) { 
-        // TODO: Implement servo control with ESP-IDF ledc driver
-        ESP_LOGD("SERVO", "Servo write: %d us on pin %d", us, attached_pin);
+    void attach(int pin) {
+        attached_pin = pin;
+
+        ledc_timer_config_t timer_conf = {};
+        timer_conf.speed_mode = LEDC_LOW_SPEED_MODE;
+        timer_conf.duty_resolution = LEDC_TIMER_14_BIT;
+        timer_conf.timer_num = LEDC_TIMER_0;
+        timer_conf.freq_hz = 50;  // 50Hz for standard servos
+        timer_conf.clk_cfg = LEDC_AUTO_CLK;
+        ledc_timer_config(&timer_conf);
+
+        ledc_channel_config_t channel_conf = {};
+        channel_conf.gpio_num = (gpio_num_t)pin;
+        channel_conf.speed_mode = LEDC_LOW_SPEED_MODE;
+        channel_conf.channel = LEDC_CHANNEL_0;
+        channel_conf.intr_type = LEDC_INTR_DISABLE;
+        channel_conf.timer_sel = LEDC_TIMER_0;
+        channel_conf.duty = 0;
+        channel_conf.hpoint = 0;
+        ledc_channel_config(&channel_conf);
+    }
+
+    void detach() {
+        if (attached_pin >= 0) {
+            ledc_stop(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+            attached_pin = -1;
+        }
+    }
+
+    void writeMicroseconds(int us) {
+        if (attached_pin < 0) return;
+
+        const int period = 20000;  // Servo period in microseconds (50Hz)
+        const uint32_t max_duty = (1 << LEDC_TIMER_14_BIT) - 1;
+        uint32_t duty = (uint32_t)(((uint64_t)us * max_duty) / period);
+
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+        ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+        ESP_LOGD("SERVO", "Servo write: %d us on pin %d (duty=%u)", us, attached_pin, (unsigned int)duty);
     }
 private:
     int attached_pin = -1;
